@@ -1,0 +1,19 @@
+{
+  "experiment": "hnn_mnist",
+  "epochs": 3,
+  "batch_size": 128,
+  "lr": 0.001,
+  "weight_decay": 0.0,
+  "time_steps": 10,
+  "beta": 0.8,
+  "threshold": 0.5,
+  "input_gain": 1.0,
+  "num_workers": 0,
+  "limit_batches": 0,
+  "limit_train_batches": 0,
+  "limit_eval_batches": 0,
+  "seed": 42,
+  "device": "cpu",
+  "output_root": "experiments/e3_param_sweep_mnist/runs_beta",
+  "disable_progress": true
+}

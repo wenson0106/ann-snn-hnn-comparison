@@ -1,0 +1,7 @@
+"experiment","threshold","beta","time_steps","input_gain","best_val_acc","test_acc","test_loss","overall_firing_rate","hidden_firing_rate","run_dir"
+"hnn_mnist","0.5","0.95","5","1","0.976833333333333","0.979","0.0681536892876029","0.272425717017208","0.272425717017208","experiments\e3_param_sweep_mnist\runs_time_steps\hnn_mnist\20260526-141227"
+"hnn_mnist","0.5","0.95","10","1","0.978","0.9827","0.0580042858894914","0.263182777246654","0.263182777246654","experiments\e3_param_sweep_mnist\runs\hnn_mnist\20260526-131512"
+"hnn_mnist","0.5","0.95","20","1","0.980333333333333","0.9836","0.0560746280401945","0.25492211998088","0.25492211998088","experiments\e3_param_sweep_mnist\runs_time_steps\hnn_mnist\20260526-141432"
+"snn_mnist_spike","0.5","0.95","5","1","0.975166666666667","0.98","0.0618397025965154","0.189121737381127","0.198590943637916","experiments\e3_param_sweep_mnist\runs_time_steps\snn_mnist_spike\20260526-135427"
+"snn_mnist_spike","0.5","0.95","10","1","0.977333333333333","0.9813","0.0620963809672743","0.171063441843453","0.177508070025619","experiments\e3_param_sweep_mnist\runs\snn_mnist_spike\20260526-130136"
+"snn_mnist_spike","0.5","0.95","20","1","0.976333333333333","0.9803","0.0600401512481272","0.162217574067301","0.167184816396243","experiments\e3_param_sweep_mnist\runs_time_steps\snn_mnist_spike\20260526-135842"

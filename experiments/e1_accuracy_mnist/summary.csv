@@ -1,0 +1,4 @@
+experiment,run_dir,epochs,batch_size,time_steps,seed,best_epoch,best_val_acc,test_acc,test_loss,test_num_samples
+ann_mnist,runs\ann_mnist\20260526-111504,3,128,10,42,3,0.9774999995231628,0.9809,0.05601938058696687,10000
+snn_mnist_spike,runs\snn_mnist_spike\20260526-111623,3,128,10,42,3,0.9733333333333334,0.9764,0.07527864934280515,10000
+hnn_mnist,runs\hnn_mnist\20260526-112225,3,128,10,42,3,0.9745,0.9783,0.06701964314728975,10000

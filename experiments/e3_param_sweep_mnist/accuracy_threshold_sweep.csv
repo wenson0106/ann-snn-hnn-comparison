@@ -1,0 +1,7 @@
+experiment,run_dir,epochs,batch_size,time_steps,beta,threshold,seed,best_epoch,best_val_acc,test_acc,test_loss,test_num_samples
+snn_mnist_spike,experiments\e3_param_sweep_mnist\runs\snn_mnist_spike\20260526-130136,3,128,10,0.95,0.5,42,3,0.9773333333333334,0.9813,0.06209638096727431,10000
+snn_mnist_spike,runs\snn_mnist_spike\20260526-111623,3,128,10,0.95,1.0,42,3,0.9733333333333334,0.9764,0.07527864934280515,10000
+snn_mnist_spike,experiments\e3_param_sweep_mnist\runs\snn_mnist_spike\20260526-130814,3,128,10,0.95,1.5,42,3,0.9685,0.9714,0.09295827661678195,10000
+hnn_mnist,experiments\e3_param_sweep_mnist\runs\hnn_mnist\20260526-131512,3,128,10,0.95,0.5,42,3,0.978,0.9827,0.05800428588949144,10000
+hnn_mnist,runs\hnn_mnist\20260526-112225,3,128,10,0.95,1.0,42,3,0.9745,0.9783,0.06701964314728975,10000
+hnn_mnist,experiments\e3_param_sweep_mnist\runs\hnn_mnist\20260526-131819,3,128,10,0.95,1.5,42,3,0.9699999995231628,0.9721,0.08805694806277752,10000

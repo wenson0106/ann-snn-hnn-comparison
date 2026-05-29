@@ -1,0 +1,41 @@
+[
+  {
+    "experiment": "ann_mnist",
+    "run_dir": "runs\\ann_mnist\\20260526-111504",
+    "epochs": 3,
+    "batch_size": 128,
+    "time_steps": 10,
+    "seed": 42,
+    "best_epoch": 3,
+    "best_val_acc": 0.9774999995231628,
+    "test_acc": 0.9809,
+    "test_loss": 0.05601938058696687,
+    "test_num_samples": 10000
+  },
+  {
+    "experiment": "snn_mnist_spike",
+    "run_dir": "runs\\snn_mnist_spike\\20260526-111623",
+    "epochs": 3,
+    "batch_size": 128,
+    "time_steps": 10,
+    "seed": 42,
+    "best_epoch": 3,
+    "best_val_acc": 0.9733333333333334,
+    "test_acc": 0.9764,
+    "test_loss": 0.07527864934280515,
+    "test_num_samples": 10000
+  },
+  {
+    "experiment": "hnn_mnist",
+    "run_dir": "runs\\hnn_mnist\\20260526-112225",
+    "epochs": 3,
+    "batch_size": 128,
+    "time_steps": 10,
+    "seed": 42,
+    "best_epoch": 3,
+    "best_val_acc": 0.9745,
+    "test_acc": 0.9783,
+    "test_loss": 0.06701964314728975,
+    "test_num_samples": 10000
+  }
+]
