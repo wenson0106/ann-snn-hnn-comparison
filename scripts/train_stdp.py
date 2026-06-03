@@ -1,21 +1,23 @@
 #!/usr/bin/env python3
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
 import argparse
 import json
 import random
 from datetime import datetime
-from pathlib import Path
-
-import numpy as np
-import torch
-from torch import nn
-from tqdm import tqdm
 
 from src.data.cifar10_ttfs import build_cifar10_ttfs_loaders
 from src.models.stdp_lenet import STDPLeNet
 from src.models.hybrid_stdp_lenet import HybridSTDPLeNet
 from src.utils.metrics import accuracy
-
-ROOT = Path(__file__).resolve().parents[1]
+import numpy as np
+import torch
+from torch import nn
+from tqdm import tqdm
 
 
 def set_seed(seed: int) -> None:
@@ -268,8 +270,10 @@ def main() -> None:
     ts = datetime.now().strftime("%Y%m%d-%H%M%S")
     args.run_dir = ROOT / args.output_root / exp_name / ts
     args.run_dir.mkdir(parents=True, exist_ok=True)
+    args_dict = vars(args).copy()
+    args_dict["run_dir"] = str(args.run_dir)
     with (args.run_dir / "args.json").open("w") as f:
-        json.dump(vars(args), f, indent=2)
+        json.dump(args_dict, f, indent=2)
 
     data_root = ROOT / "data"
     split_path = data_root / "splits" / f"cifar10_seed{args.seed}.pt"

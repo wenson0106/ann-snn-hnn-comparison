@@ -41,6 +41,7 @@ class HybridSTDPLeNet(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         B, T = x.shape[:2]
+        self.stdp1.reset_state()
         memories: dict[str, Optional[torch.Tensor]] = {
             "conv2": None,
             "fc1": None,
