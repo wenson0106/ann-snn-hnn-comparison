@@ -90,6 +90,45 @@ python -m scripts.evaluate_firing_rate --runs runs/snn_cifar10/<timestamp> runs/
 
 ---
 
+## STDP 實驗（實驗分支：`stdp-experiments`）
+
+使用 Spike-Timing-Dependent Plasticity (STDP) 作為無監督特徵學習器，比較純 STDP 與混合 STDP+BP 在 CIFAR-10 和 MNIST 上的表現。
+
+### 結果摘要
+
+| 模型 | CIFAR-10 | MNIST |
+|------|----------|-------|
+| ANN (BP) | 60.77% | 98.09% |
+| SNN (BP) | 55.05% | 97.64% |
+| **混合 STDP+BP** | **27.08%** | **96.05%** |
+| **純 STDP** | **21.09%** | **89.49%** |
+
+詳細討論與圖表請見 [`report_stdp/report.md`](report_stdp/report.md)。
+
+### 執行 STDP 實驗
+
+```powershell
+# Pure STDP on MNIST
+python scripts/train_stdp.py --dataset mnist --experiment stdp_pure --threshold 0.1 --stdp-epochs 50 --disable-progress
+
+# Hybrid STDP+BP on MNIST
+python scripts/train_stdp.py --dataset mnist --experiment stdp_hybrid --threshold 0.1 --stdp-epochs 50 --disable-progress
+
+# Pure STDP on CIFAR-10
+python scripts/train_stdp.py --dataset cifar10 --experiment stdp_pure --threshold 0.1 --stdp-epochs 50 --disable-progress
+
+# Hybrid STDP+BP on CIFAR-10
+python scripts/train_stdp.py --dataset cifar10 --experiment stdp_hybrid --threshold 0.1 --stdp-epochs 50 --disable-progress
+```
+
+### HP 掃描
+
+```powershell
+python scripts/sweep_stdp_mnist.py
+```
+
+---
+
 ## 專案結構
 
 ```text
@@ -104,13 +143,24 @@ python -m scripts.evaluate_firing_rate --runs runs/snn_cifar10/<timestamp> runs/
 |   +-- images/              # Generated charts
 |   +-- report.md            # Full results & discussion
 +-- scripts/
-|   +-- prepare_data.py      # Download datasets and create split files
+|   +-- prepare_data.py          # Download datasets and create split files
 |   +-- summarize_accuracy.py
 |   +-- evaluate_firing_rate.py
-|   +-- make_figures.py      # Generate report figures
+|   +-- make_figures.py          # Generate report figures
+|   +-- train_stdp.py            # Two-phase STDP training (Pure & Hybrid)
+|   +-- sweep_stdp_mnist.py      # MNIST hyperparameter sweep
+|   +-- make_figures_stdp.py     # STDP report figures
 +-- src/
-    +-- data/                # Dataset builders
-    +-- models/              # ANN, SNN, HNN model definitions
-    +-- utils/               # Training utilities
-    +-- train.py             # Shared training entry point
+    +-- data/                    # Dataset builders
+    |   +-- cifar10_ttfs.py      # TTFS-encoded CIFAR-10
+    |   +-- mnist_ttfs.py        # TTFS-encoded MNIST
+    +-- models/                  # ANN, SNN, HNN model definitions
+    |   +-- stdp.py              # STDPConv2d layer
+    |   +-- stdp_lenet.py        # Pure STDP LeNet
+    |   +-- hybrid_stdp_lenet.py # Hybrid STDP+BP LeNet
+    +-- utils/                   # Training utilities
+    +-- train.py                 # Shared training entry point
++-- report_stdp/                 # STDP experiment report
+|   +-- images/                  # STDP figures
+|   +-- report.md                # STDP results & discussion
 ```
