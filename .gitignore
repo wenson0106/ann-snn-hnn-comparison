@@ -17,6 +17,7 @@ data/splits/
 
 # Training outputs
 runs/
+runs_stdp*/
 experiments/*/firing_rate_*/
 
 # Logs

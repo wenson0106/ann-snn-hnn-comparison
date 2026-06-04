@@ -11,6 +11,7 @@ import random
 from datetime import datetime
 
 from src.data.cifar10_ttfs import build_cifar10_ttfs_loaders
+from src.data.mnist_ttfs import build_mnist_ttfs_loaders
 from src.models.stdp_lenet import STDPLeNet
 from src.models.hybrid_stdp_lenet import HybridSTDPLeNet
 from src.utils.metrics import accuracy
@@ -237,6 +238,7 @@ def phase2_hybrid(model, loaders, device, args):
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--dataset", choices=["cifar10", "mnist"], default="cifar10")
     parser.add_argument("--experiment", choices=["stdp_pure", "stdp_hybrid"], required=True)
     parser.add_argument("--stdp-epochs", type=int, default=50)
     parser.add_argument("--epochs", type=int, default=100)
@@ -266,7 +268,7 @@ def main() -> None:
     set_seed(args.seed)
     device = default_device(args.device)
 
-    exp_name = args.experiment
+    exp_name = f"{args.dataset}_{args.experiment}"
     ts = datetime.now().strftime("%Y%m%d-%H%M%S")
     args.run_dir = ROOT / args.output_root / exp_name / ts
     args.run_dir.mkdir(parents=True, exist_ok=True)
@@ -276,14 +278,25 @@ def main() -> None:
         json.dump(args_dict, f, indent=2)
 
     data_root = ROOT / "data"
-    split_path = data_root / "splits" / f"cifar10_seed{args.seed}.pt"
-    ttfs_loaders = build_cifar10_ttfs_loaders(
+    split_path = data_root / "splits" / f"{args.dataset}_seed{args.seed}.pt"
+
+    if args.dataset == "cifar10":
+        build_loaders = build_cifar10_ttfs_loaders
+        in_channels = 3
+        feature_size = 5
+    else:
+        build_loaders = build_mnist_ttfs_loaders
+        in_channels = 1
+        feature_size = 4
+
+    ttfs_loaders = build_loaders(
         data_root=data_root, split_path=split_path,
         batch_size=args.batch_size, num_workers=args.num_workers,
         time_steps=args.time_steps, input_gain=args.input_gain,
     )
 
     stdp_kwargs = dict(
+        in_channels=in_channels, feature_size=feature_size,
         beta=args.beta, threshold=args.threshold,
         stdp_lr=args.stdp_lr, tau_pre=args.tau_pre, tau_post=args.tau_post,
         A_plus=args.A_plus, A_minus=args.A_minus,
