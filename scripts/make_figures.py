@@ -479,6 +479,118 @@ def fig_e3_c10_overview():
     styled_save(fig, "fig8_e3_cifar10_overview.png")
 
 
+# ═══════════════════════════════════════════════════════════════════
+# Figure 9: E4 Quantization Comparison (CIFAR-10)
+# ═══════════════════════════════════════════════════════════════════
+
+def fig_e4_quantization():
+    quant_data = {
+        "ANN": {"float32": 0.6200, "int8": 0.6204, "int4": 0.5743},
+        "SNN": {"float32": 0.5508, "int8": 0.5535, "int4": 0.5078},
+        "HNN": {"float32": 0.6045, "int8": 0.6033, "int4": 0.5732},
+    }
+
+    labels = list(quant_data.keys())
+    x = np.arange(len(labels))
+    w = 0.25
+    bits = ["float32", "int8", "int4"]
+    colors = ["#4C72B0", "#DD8452", "#55A868"]
+    hatch_patterns = ["", "//", "xx"]
+
+    fig, ax = plt.subplots(figsize=(8, 5.5))
+    for i, bit in enumerate(bits):
+        vals = [quant_data[m][bit] for m in labels]
+        bars = ax.bar(x + (i - 1) * w, vals, w, label=bit,
+                      color=colors, edgecolor="white", linewidth=0.5,
+                      alpha=1.0 if i == 0 else 0.75)
+        for bar, val in zip(bars, vals):
+            ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.008,
+                    f"{val:.2%}", ha="center", va="bottom", fontsize=9, fontweight="bold")
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels, fontsize=12)
+    ax.set_ylabel("Test Accuracy", fontsize=11)
+    ax.set_ylim(0, 0.72)
+    ax.yaxis.set_major_formatter(mticker.PercentFormatter(1.0))
+    ax.legend(fontsize=10, title="Bit Width", title_fontsize=11)
+    ax.grid(axis="y", alpha=0.3)
+    ax.set_title("E4 Post-Training Weight Quantization (CIFAR-10)",
+                 fontsize=13, fontweight="bold")
+
+    styled_save(fig, "fig9_e4_quantization.png")
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Figure 11: E5 Kernel Size Comparison (CIFAR-10)
+# ═══════════════════════════════════════════════════════════════════
+
+def fig_e5_kernel():
+    labels = ["ANN", "SNN", "HNN"]
+    k5  = [0.6200, 0.5508, 0.6045]
+    k3  = [0.6248, 0.5505, 0.6009]
+
+    x = np.arange(len(labels))
+    w = 0.3
+
+    fig, ax = plt.subplots(figsize=(7, 5))
+    b1 = ax.bar(x - w/2, k5, w, label="Kernel 5×5",
+                color=[COLOR_ANN, COLOR_SNN, COLOR_HNN], edgecolor="white",
+                linewidth=0.5, alpha=0.8)
+    b2 = ax.bar(x + w/2, k3, w, label="Kernel 3×3",
+                color=[COLOR_ANN, COLOR_SNN, COLOR_HNN], edgecolor="white",
+                linewidth=0.5, alpha=1.0, hatch="//")
+
+    for bar, val in zip(b1 + b2, k5 + k3):
+        ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.008,
+                f"{val:.2%}", ha="center", va="bottom", fontsize=9, fontweight="bold")
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels, fontsize=12)
+    ax.set_ylabel("Test Accuracy", fontsize=11)
+    ax.set_ylim(0, 0.72)
+    ax.yaxis.set_major_formatter(mticker.PercentFormatter(1.0))
+    ax.legend(fontsize=10)
+    ax.grid(axis="y", alpha=0.3)
+    ax.set_title("E5 Kernel Size Comparison (CIFAR-10)",
+                 fontsize=13, fontweight="bold")
+
+    styled_save(fig, "fig11_e5_kernel.png")
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Figure 10: E1-B Time Steps Variation (CIFAR-10 Default Config)
+# ═══════════════════════════════════════════════════════════════════
+
+def fig_e1b_timesteps():
+    snn = [(1, 0.4362), (3, 0.4925), (10, 0.5508)]
+    hnn = [(1, 0.5276), (3, 0.5856), (10, 0.6045)]
+
+    fig, ax = plt.subplots(figsize=(7, 5))
+
+    x_snn = [p[0] for p in snn]
+    yy1 = [p[1] for p in snn]
+    ax.plot(x_snn, yy1, "o-", color=COLOR_SNN, lw=2.5, ms=8, label="SNN (default)")
+
+    x_hnn = [p[0] for p in hnn]
+    yy2 = [p[1] for p in hnn]
+    ax.plot(x_hnn, yy2, "s--", color=COLOR_HNN, lw=2.5, ms=8, label="HNN (default)")
+
+    for p in snn + hnn:
+        ax.annotate(f"{p[1]:.2%}", (p[0], p[1]),
+                    textcoords="offset points", xytext=(0, 12),
+                    ha="center", fontsize=9, fontweight="bold")
+
+    ax.set_xlabel("Time Steps (T)", fontsize=11)
+    ax.set_ylabel("Test Accuracy", fontsize=11)
+    ax.set_xticks([1, 3, 5, 10])
+    ax.set_title("E1-B Time Steps on CIFAR-10\n(default threshold=1.0, β=0.95)",
+                 fontsize=12, fontweight="bold")
+    ax.grid(alpha=0.3)
+    ax.legend(fontsize=10)
+
+    styled_save(fig, "fig10_e1b_timesteps.png")
+
+
 if __name__ == "__main__":
     print("Generating figures...")
     fig_e1_overview()
@@ -489,4 +601,7 @@ if __name__ == "__main__":
     fig_e3b_beta()
     fig_e3c_timesteps()
     fig_e3_c10_overview()
+    fig_e4_quantization()
+    fig_e1b_timesteps()
+    fig_e5_kernel()
     print("Done! All figures saved to report/images/")

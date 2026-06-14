@@ -8,10 +8,11 @@ class LeNetANN(nn.Module):
         in_channels: int = 1,
         feature_size: int = 4,
         num_classes: int = 10,
+        kernel_size: int = 5,
     ):
         super().__init__()
-        self.conv1 = nn.Conv2d(in_channels, 6, kernel_size=5)
-        self.conv2 = nn.Conv2d(6, 16, kernel_size=5)
+        self.conv1 = nn.Conv2d(in_channels, 6, kernel_size=kernel_size)
+        self.conv2 = nn.Conv2d(6, 16, kernel_size=kernel_size)
         self.fc1 = nn.Linear(16 * feature_size * feature_size, 120)
         self.fc2 = nn.Linear(120, 84)
         self.fc3 = nn.Linear(84, num_classes)

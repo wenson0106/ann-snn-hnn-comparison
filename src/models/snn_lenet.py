@@ -14,10 +14,11 @@ class LeNetSNN(nn.Module):
         num_classes: int = 10,
         beta: float = 0.95,
         threshold: float = 1.0,
+        kernel_size: int = 5,
     ):
         super().__init__()
-        self.conv1 = ConvLIFBlock(input_channels, 6, beta=beta, threshold=threshold)
-        self.conv2 = ConvLIFBlock(6, 16, beta=beta, threshold=threshold)
+        self.conv1 = ConvLIFBlock(input_channels, 6, kernel_size=kernel_size, beta=beta, threshold=threshold)
+        self.conv2 = ConvLIFBlock(6, 16, kernel_size=kernel_size, beta=beta, threshold=threshold)
         self.fc1 = LinearLIFBlock(16 * feature_size * feature_size, 120, beta=beta, threshold=threshold)
         self.fc2 = LinearLIFBlock(120, 84, beta=beta, threshold=threshold)
         self.readout = nn.Linear(84, num_classes)

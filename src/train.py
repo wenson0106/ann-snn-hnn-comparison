@@ -37,6 +37,13 @@ def default_device(requested: str) -> torch.device:
     return torch.device(requested)
 
 
+def compute_feature_size(input_size: int, kernel_size: int, num_convs: int = 2) -> int:
+    size = input_size
+    for _ in range(num_convs):
+        size = (size - kernel_size + 1) // 2
+    return size
+
+
 def build_experiment(args: argparse.Namespace):
     data_root = ROOT / "data"
     if args.experiment == "ann_mnist":
@@ -46,7 +53,7 @@ def build_experiment(args: argparse.Namespace):
             batch_size=args.batch_size,
             num_workers=args.num_workers,
         )
-        model = LeNetANN()
+        model = LeNetANN(kernel_size=args.kernel_size)
     elif args.experiment == "snn_nmnist":
         loaders = build_nmnist_loaders(
             data_root=data_root,
@@ -55,7 +62,7 @@ def build_experiment(args: argparse.Namespace):
             num_workers=args.num_workers,
             time_steps=args.time_steps,
         )
-        model = LeNetSNN(beta=args.beta, threshold=args.threshold)
+        model = LeNetSNN(beta=args.beta, threshold=args.threshold, kernel_size=args.kernel_size)
     elif args.experiment == "snn_mnist_spike":
         loaders = build_mnist_spike_loaders(
             data_root=data_root,
@@ -68,9 +75,10 @@ def build_experiment(args: argparse.Namespace):
         )
         model = LeNetSNN(
             input_channels=1,
-            feature_size=4,
+            feature_size=compute_feature_size(28, args.kernel_size),
             beta=args.beta,
             threshold=args.threshold,
+            kernel_size=args.kernel_size,
         )
     elif args.experiment == "hnn_mnist":
         loaders = build_mnist_loaders(
@@ -79,7 +87,12 @@ def build_experiment(args: argparse.Namespace):
             batch_size=args.batch_size,
             num_workers=args.num_workers,
         )
-        model = LeNetHNN(time_steps=args.time_steps, beta=args.beta, threshold=args.threshold)
+        model = LeNetHNN(
+            time_steps=args.time_steps,
+            beta=args.beta,
+            threshold=args.threshold,
+            kernel_size=args.kernel_size,
+        )
     elif args.experiment == "ann_cifar10":
         loaders = build_cifar10_loaders(
             data_root=data_root,
@@ -87,7 +100,11 @@ def build_experiment(args: argparse.Namespace):
             batch_size=args.batch_size,
             num_workers=args.num_workers,
         )
-        model = LeNetANN(in_channels=3, feature_size=5)
+        model = LeNetANN(
+            in_channels=3,
+            feature_size=compute_feature_size(32, args.kernel_size),
+            kernel_size=args.kernel_size,
+        )
     elif args.experiment == "snn_cifar10":
         loaders = build_cifar10_spike_loaders(
             data_root=data_root,
@@ -100,9 +117,10 @@ def build_experiment(args: argparse.Namespace):
         )
         model = LeNetSNN(
             input_channels=3,
-            feature_size=5,
+            feature_size=compute_feature_size(32, args.kernel_size),
             beta=args.beta,
             threshold=args.threshold,
+            kernel_size=args.kernel_size,
         )
     elif args.experiment == "hnn_cifar10":
         loaders = build_cifar10_loaders(
@@ -113,10 +131,11 @@ def build_experiment(args: argparse.Namespace):
         )
         model = LeNetHNN(
             in_channels=3,
-            feature_size=5,
+            feature_size=compute_feature_size(32, args.kernel_size),
             time_steps=args.time_steps,
             beta=args.beta,
             threshold=args.threshold,
+            kernel_size=args.kernel_size,
         )
     else:
         raise ValueError(f"Unknown experiment: {args.experiment}")
@@ -298,6 +317,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--weight-decay", type=float, default=0.0)
     parser.add_argument("--time-steps", type=int, default=10)
+    parser.add_argument("--kernel-size", type=int, default=5,
+                        help="convolution kernel size (default: 5)")
     parser.add_argument("--beta", type=float, default=0.95)
     parser.add_argument("--threshold", type=float, default=1.0)
     parser.add_argument("--input-gain", type=float, default=1.0)

@@ -184,7 +184,75 @@ SNN monotonically improves with more time steps. HNN peaks at T=10, suggesting i
 
 ---
 
-## CIFAR-10 Configurations (for reference)
+---
+
+## E1-B (CIFAR-10): Time Steps Variation (Default Config)
+
+Same default params as E1 (threshold=1.0, beta=0.95). Combined with E3-C time steps sweep data (different threshold per model) for comparison.
+
+Default config (thr=1.0, beta=0.95):
+
+| Model | Time Steps | Epochs | Best Val Acc | Test Acc | Test Loss |
+|---|---|---|---:|---:|---:|---:|
+| SNN | 1 | 17 | 0.4396 | **0.4362** | 1.5718 |
+| SNN | 3 | 16 | 0.4938 | **0.4925** | 1.4185 |
+| SNN | 10 | 18 | 0.5476 | **0.5508** | 1.2723 |
+| HNN | 1 | 24 | 0.5260 | **0.5276** | 1.3565 |
+| HNN | 3 | 25 | 0.5868 | **0.5856** | 1.1853 |
+| HNN | 10 | 25 | 0.5986 | **0.6045** | 1.1297 |
+
+Both models benefit monotonically from more time steps. SNN is more sensitive (gap between T=1 and T=10: +11.5%) than HNN (+7.7%), because HNN's analog first layer already extracts spatial features before the temporal loop.
+
+Compared with tuned configs from E3-C (SNN thr=1.5, HNN thr=0.5):
+
+| Model | Time Steps | Default Config | Tuned Config |
+|---|---|---|---:|
+| SNN | 1 | 0.4362 | — |
+| SNN | 3 | 0.4925 | — |
+| SNN | 5 | — | 0.5310 |
+| SNN | 10 | 0.5508 | 0.5529 |
+| SNN | 20 | — | 0.5602 |
+| HNN | 1 | 0.5276 | — |
+| HNN | 3 | 0.5856 | — |
+| HNN | 5 | — | 0.5883 |
+| HNN | 10 | 0.6045 | 0.6081 |
+| HNN | 20 | — | 0.6016 |
+
+---
+
+## E4 (CIFAR-10): Post-Training Weight Quantization (8-bit / 4-bit)
+
+**Method**: Uniform per-tensor affine quantization of all Conv2d/Linear weights after training (no fine-tuning). Quantized weights are dequantized for simulated inference.
+
+| Model | float32 | int8 | int4 | Size (float32) | Size (int8) | Size (int4) |
+|---|---|---|---:|---:|---:|---:|---:|
+| ANN | 0.6200 | **0.6204** (0.0%) | **0.5743** (-7.4%) | 247KB | 61.8KB (4×) | 30.9KB (8×) |
+| SNN | 0.5508 | **0.5535** (+0.5%) | **0.5078** (-7.8%) | 247KB | 61.8KB (4×) | 30.9KB (8×) |
+| HNN | 0.6045 | **0.6033** (-0.2%) | **0.5732** (-5.2%) | 247KB | 61.8KB (4×) | 30.9KB (8×) |
+
+Key findings:
+- **8-bit quantization**: Near-zero accuracy loss (<0.5%) for all three model families.
+- **4-bit quantization**: Accuracy drops 5-8%. HNN is most robust (-5.2%), SNN is most affected (-7.8%), suggesting spiking dynamics amplify weight quantization noise.
+- All models have identical architecture size (same LeNet skeleton), so compression ratio is uniform.
+
+---
+
+## E5 (CIFAR-10): Kernel Size Comparison (5×5 vs 3×3)
+
+Default params: threshold=1.0, beta=0.95, T=10, patience=5
+
+| Model | Kernel | Best Epoch | Best Val Acc | Test Acc | Test Loss |
+|---|---|---|---:|---:|---:|---:|
+| ANN | 5 | 16 | 0.6262 | **0.6200** | 1.1053 |
+| ANN | 3 | 18 | 0.6262 | **0.6248** | 1.1053 |
+| SNN | 5 | 14 | 0.5476 | **0.5508** | 1.2723 |
+| SNN | 3 | 20 | 0.5420 | **0.5505** | 1.3031 |
+| HNN | 5 | 8 | 0.5986 | **0.6045** | 1.1297 |
+| HNN | 3 | 16 | 0.5838 | **0.6009** | 1.1655 |
+
+Kernel size has minimal impact on CIFAR-10 with LeNet architecture — all changes < 0.5%.
+
+## CIFAR-10 Commands (for reference)
 
 ```bash
 # E1 default

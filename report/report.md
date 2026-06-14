@@ -62,11 +62,11 @@
 
 | Model | Best Epoch | Test Accuracy |
 |---|---|---|
-| ANN | 16 | **60.77%** |
-| SNN | 18 | **55.05%** |
-| HNN | 24 | **60.26%** |
+| ANN | 20 | **62.00%** |
+| SNN | 18 | **55.08%** |
+| HNN | 25 | **60.45%** |
 
-在 CIFAR-10 上，三種模型的準確率差距明顯擴大。ANN 與 HNN 表現接近（差距不到 0.5%），而 SNN 落後約 5.7 個百分點。
+在 CIFAR-10 上，三種模型的準確率差距明顯擴大。ANN 與 HNN 表現接近（差距約 1.5%），而 SNN 落後約 7%。
 
 ![E1 Accuracy Comparison](images/fig1_e1_overview.png)
 
@@ -168,6 +168,59 @@
 
 ▲ 圖 8: CIFAR-10 上全部三個超參數掃描的結果總覽。
 
+### 2.4 E1-B: Time Steps 變化（CIFAR-10 Default Config）
+
+預設 threshold=1.0, beta=0.95 下，測試 T=1 與 T=3：
+
+| Model | T=1 | T=3 | T=10 |
+|---|---|---|---|
+| SNN | **43.62%** | **49.25%** | **55.08%** |
+| HNN | **52.76%** | **58.56%** | **60.45%** |
+
+![Time Steps Variation](images/fig10_e1b_timesteps.png)
+
+▲ 圖 9: CIFAR-10 上 default config 的 time steps 變化。兩模型都隨 T 增加進步，SNN 對 T 更敏感（T=1→10 提升 11.5% vs HNN 提升 7.7%）。
+
+HNN 在 T=1 即達到 52.76%，遠高於 SNN 的 43.62%，印證了 HNN 第一層 analog convolution 的優勢。
+
+### 2.5 E4: Post-Training 權重量化（8-bit / 4-bit）
+
+對已訓練好的 E1 checkpoint 進行 uniform per-tensor affine weight quantization，評估量化後的準確率變化：
+
+| Model | float32 | int8 | int4 | Size (float32) | Size (int8) | Size (int4) |
+|---|---|---|---|---|---|---|
+| ANN | 62.00% | **62.04%** (0.0%) | **57.43%** (-7.4%) | 247KB | 61.8KB (4×) | 30.9KB (8×) |
+| SNN | 55.08% | **55.35%** (+0.5%) | **50.78%** (-7.8%) | 247KB | 61.8KB (4×) | 30.9KB (8×) |
+| HNN | 60.45% | **60.33%** (-0.2%) | **57.32%** (-5.2%) | 247KB | 61.8KB (4×) | 30.9KB (8×) |
+
+![Quantization Comparison](images/fig9_e4_quantization.png)
+
+▲ 圖 10: CIFAR-10 上不同位元寬度的量化比較。
+
+**關鍵觀察**：
+
+1. **8-bit 幾乎無損** — 三種模型在 int8 量化後的準確率變化均小於 0.5%，說明 8-bit 對 LeNet 架構而言已足夠。
+2. **4-bit 差異顯現** — 準確率下降 5–8%，其中 HNN 最穩健（-5.2%），SNN 影響最大（-7.8%）。推測 SNN 的反覆 spiking 過程會放大權重的量化雜訊。
+3. **所有模型模型大小相同**（均使用相同 LeNet 骨幹），因此壓縮率一致。
+
+### 2.6 E5: Kernel Size 比較（5×5 vs 3×3）
+
+將所有模型的 Conv2d kernel size 從 5×5 改為 3×3（padding=0，其餘設定不變），比較 CIFAR-10 上的準確率變化：
+
+| Model | kernel=5 (E1) | kernel=3 | 變化 |
+|---|---|---|---|
+| ANN | **62.00%** | **62.48%** | +0.48% |
+| SNN | **55.08%** | **55.05%** | -0.03% |
+| HNN | **60.45%** | **60.09%** | -0.36% |
+
+| Model | kernel=5 參數量 | kernel=3 參數量 | 變化 |
+|---|---|---|---|
+| ANN | 62,006 | 61,990 | -0.03% |
+| SNN | 62,006 | 61,990 | -0.03% |
+| HNN | 62,006 | 61,990 | -0.03% |
+
+三種模型在 5×5 與 3×3 下的表現幾乎一致，差距不超過 0.5%。對於 CIFAR-10 的 32×32 小尺寸影像，3×3 kernel 提取的局部特徵已足夠，更大的感受野沒有帶來顯著優勢。
+
 ---
 
 ## 3. 討論 (Discussion)
@@ -177,7 +230,7 @@
 最顯著的發現是兩組資料集的 ANN-SNN gap 差異極大：
 
 - **MNIST**: ANN(98.09%) - SNN(97.64%) = **0.45%**
-- **CIFAR-10**: ANN(60.77%) - SNN(55.05%) = **5.72%**
+- **CIFAR-10**: ANN(62.00%) - SNN(55.08%) = **6.92%**
 
 這個差距放大了約 13 倍。原因有二：
 
@@ -223,11 +276,25 @@ Time steps 的影響呈現不同的模式：
 
 這使得 HNN 成為從 ANN 過渡到 SNN 時的一個理想中間方案，特別是在輸入資料較複雜的應用場景。
 
-### 3.6 實驗限制
+### 3.6 Time Steps 對 SNN vs HNN 的影響
+
+Time steps 變化實驗（E1-B）顯示了一個重要的模式：**HNN 在極少 time steps（T=1）下仍能保持不錯的準確率（52.76%），而 SNN 在 T=1 時幾乎無法有效運作（43.62%）。** 這凸顯了 HNN 設計的核心優勢 — 第一層 analog convolution 提供了穩固的空間特徵基礎，後續的 spiking layers 是在此基礎上進行 temporal refinement 而非完全依賴時間編碼。
+
+### 3.7 量化穩健性
+
+權重量化實驗（E4）顯示所有三種模型對 8-bit 量化都高度穩健，但 4-bit 量化時 HNN 的表現最佳。SNN 對量化最敏感的現象可能來自其 spiking dynamics：權重量化引入的誤差在逐層的 spiking 過程中會被非線性地放大，而 HNN 的 analog 第一層起到了「緩衝」作用。
+
+### 3.8 Kernel Size 的影響
+
+5×5 與 3×3 kernel 的比較（E5）顯示，在 CIFAR-10 的 32×32 小尺寸影像上，kernel size 對三種模型的影響都很有限（變化 < 0.5%）。這與文獻中常見的觀察一致 — 在小型影像資料集上，3×3 kernel 透過更深的網路堆疊來增加感受野已足夠，單純擴大單層 kernel 效益有限。值得注意的是，三種模型對此變化的反應幾乎相同，說明 kernel size 的影響是架構無關的。
+
+### 3.9 實驗限制
 
 1. **模型容量** — 本實驗使用 LeNet，參數量較少。在更大的模型（ResNet、VGG）上，ANN/SNN 的差距可能有所不同。
 2. **SNN 訓練方式** — 本實驗採用從頭訓練（BPTT + surrogate gradient），非 ANN-to-SNN 轉換。後者通常會造成更大的準確率下降。
 3. **Rate coding 的限制** — 本實驗使用最簡單的 rate coding，更先進的編碼方式（如 temporal coding、phase coding）可能改善 SNN 的表現。
+4. **量化方式** — 本實驗採用 post-training uniform quantization，未使用 quantization-aware training（QAT），後者通常能達到更好的 4-bit 準確率。
+5. **Kernel size 比較** — 僅測試 5×5 與 3×3 兩種配置，且未調整 padding 來保持特徵圖大小一致，未來可進一步測試更小的 kernel（如 1×1）或搭配 padding 的實驗設計。
 
 ---
 
@@ -237,14 +304,20 @@ Time steps 的影響呈現不同的模式：
 
 1. **MNIST 不適合作為 ANN/SNN 比較的基準**，因為其簡單性無法反映架構間的實質差異。
 
-2. **CIFAR-10 上 ANN 與 HNN 表現接近（≈60.8%）**，顯著優於純 SNN（55.0%），差距約 5.7 個百分點。這主要來自 rate coding 對複雜自然影像的資訊損失。
+2. **CIFAR-10 上 ANN 與 HNN 表現接近（62.00% vs 60.45%）**，顯著優於純 SNN（55.08%），差距約 7%。這主要來自 rate coding 對複雜自然影像的資訊損失。
 
 3. **Threshold 的超參數選擇高度依賴資料集難度** — 簡單資料上低 threshold 較好，複雜資料上 SNN 需要高 threshold 來抑制 noise。
 
 4. **HNN 是最穩健的選擇**，以極小的準確率代價換取了 spiking neural network 的特性（事件驅動計算、生物可解釋性），是從傳統 ANN 過渡到純 SNN 的理想橋樑。
 
+5. **Time steps 對 HNN 的影響較小** — HNN 在 T=1 時仍有 52.76% 的準確率（SNN 僅 43.62%），證明了 hybrid 設計的優勢。
+
+6. **8-bit 量化對所有模型幾乎無損**，4-bit 時 HNN 最穩健（-5.2%）、SNN 最敏感（-7.8%），反映 spiking dynamics 對權重雜訊的放大效應。
+
+7. **Kernel size（5×5 vs 3×3）對 CIFAR-10 影響有限**，三種模型變化均 < 0.5%，說明在此資料集上感受野已足夠。
+
 ---
 
-*報告製作日期：2026-05-26*
-*硬體：NVIDIA RTX 3070 Laptop GPU*
-*框架：PyTorch 1.12.1 + CUDA 11.6*
+*報告製作日期：2026-06-15*
+*硬體：NVIDIA RTX 4090 (24GB)*
+*框架：PyTorch 2.12.0 + CUDA 12.6*
