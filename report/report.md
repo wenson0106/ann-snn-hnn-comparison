@@ -23,7 +23,7 @@
 |---|---|---|---|
 | **ANN (LeNetANN)** | 連續值影像 (ToTensor + Normalize) | Conv → ReLU → Pool → Conv → ReLU → Pool → FC → ReLU → FC → ReLU | Linear (logits) |
 | **SNN (LeNetSNN)** | Rate-coded spike train [B, T, C, H, W] | Conv → LIF → Pool → Conv → LIF → Pool → FC → LIF → FC → LIF | Linear (readout, non-spiking) |
-| **HNN (LeNetHNN)** | 連續值影像（第一層 analog） | Conv → ReLU → Pool → LIF → Conv → LIF → Pool → FC → LIF → FC → LIF | Linear (readout, non-spiking) |
+| **HNN (LeNetHNN)** | 連續值影像（第一層 analog） | Conv → LIF → Pool → Conv → LIF → Pool → FC → LIF → FC → LIF | Linear (readout, non-spiking) |
 
 三種模型共享相同的 LeNet 結構（2 層 Conv + 3 層 FC），差異僅在於 activation function 與 temporal processing 的設計。
 
