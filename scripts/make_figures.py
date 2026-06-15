@@ -66,6 +66,13 @@ def pick_best(runs, sort_key="test"):
     runs = sorted(runs, key=lambda r: r["test"]["acc"], reverse=True)
     return runs[0]
 
+def pick_best_default(runs):
+    """Pick best run with default kernel size (5 or unset)."""
+    filtered = [r for r in runs if r["args"].get("kernel_size") in (None, 5)]
+    if not filtered:
+        return None
+    return sorted(filtered, key=lambda r: r["test"]["acc"], reverse=True)[0]
+
 def exact(runs, **filters):
     """Return runs matching exact kwargs."""
     out = []
@@ -88,7 +95,7 @@ def fig_e1_overview():
     a_mnist = pick_best(ann_mnist)["test"]["acc"]
     s_mnist = pick_best(snn_mnist)["test"]["acc"]
     h_mnist = pick_best(hnn_mnist)["test"]["acc"]
-    a_c10   = pick_best(ann_c10)["test"]["acc"]
+    a_c10   = pick_best_default(ann_c10)["test"]["acc"]
     s_c10   = exact(snn_c10, time_steps=10, threshold=1.0, beta=0.95)[0]["test"]["acc"]
     h_c10   = exact(hnn_c10, time_steps=10, threshold=1.0, beta=0.95)[0]["test"]["acc"]
 
@@ -126,7 +133,7 @@ def fig_e1_overview():
 # ═══════════════════════════════════════════════════════════════════
 
 def fig_e1_cifar10():
-    a = pick_best(ann_c10)
+    a = pick_best_default(ann_c10)
     s = exact(snn_c10, time_steps=10, threshold=1.0, beta=0.95)[0]
     h = exact(hnn_c10, time_steps=10, threshold=1.0, beta=0.95)[0]
     models = [
@@ -158,7 +165,7 @@ def fig_e1_cifar10():
 
 
 # ═══════════════════════════════════════════════════════════════════
-# Figure 3: E2 Layer-wise Firing Rate
+# Figure 3: E2 Layer-wise Firing Rate — Time Steps Comparison
 # ═══════════════════════════════════════════════════════════════════
 
 def fig_e2_firing_rate():
@@ -169,46 +176,69 @@ def fig_e2_firing_rate():
         except:
             return None
 
-    mnist_fr = load_fr_results("experiments/e2_firing_rate_mnist/firing_rate_results.json")
     cifar_fr = load_fr_results("experiments/e2_firing_rate_cifar10/firing_rate_results.json")
+    if cifar_fr is None:
+        print("  WARNING: CIFAR-10 firing rate data not found, skipping fig3")
+        return
 
-    # Build layer dicts
-    def layers_from_fr(fr_results, model_name):
-        for r in fr_results:
-            if r["experiment"] == model_name:
-                return r["layer_firing_rate"]
-        return {}
+    # Organize by (model, time_steps) -> layer_firing_rate
+    snn_by_t = {}
+    hnn_by_t = {}
+    for r in cifar_fr:
+        ts = r["time_steps"]
+        if r["experiment"] == "snn_cifar10":
+            snn_by_t[ts] = r["layer_firing_rate"]
+        elif r["experiment"] == "hnn_cifar10":
+            hnn_by_t[ts] = r["layer_firing_rate"]
 
-    mnist_snn = layers_from_fr(mnist_fr, "snn_mnist_spike") if mnist_fr else {}
-    mnist_hnn = layers_from_fr(mnist_fr, "hnn_mnist")       if mnist_fr else {}
-    cifar_snn = layers_from_fr(cifar_fr, "snn_cifar10")     if cifar_fr else {}
-    cifar_hnn = layers_from_fr(cifar_fr, "hnn_cifar10")     if cifar_fr else {}
+    t_values = sorted(set(list(snn_by_t.keys()) + list(hnn_by_t.keys())))
 
-    # Only common hidden layers
-    snn_layers_all = ["conv1", "conv2", "fc1", "fc2"]
-    hnn_layers_all = ["first_spike", "conv2", "fc1", "fc2"]
-    x = np.arange(len(snn_layers_all))
+    # Layer mapping: pair SNN and HNN equivalent layers
+    layer_pairs = [
+        ("conv1", "first_spike", "Layer 1\n(Conv→Spike)"),
+        ("conv2", "conv2",       "Layer 2\n(Conv2)"),
+        ("fc1",   "fc1",         "Layer 3\n(FC1)"),
+        ("fc2",   "fc2",         "Layer 4\n(FC2)"),
+    ]
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5), sharey=True)
+    fig, axes = plt.subplots(2, 2, figsize=(14, 10), sharey=False)
+    snn_grad = [__import__("matplotlib").colors.to_rgba(COLOR_SNN, a) for a in [0.4, 0.55, 0.7, 0.85, 1.0]]
+    hnn_grad = [__import__("matplotlib").colors.to_rgba(COLOR_HNN, a) for a in [0.4, 0.55, 0.7, 0.85, 1.0]]
+    t_labels = [f"T={t}" for t in t_values]
 
-    w = 0.35
-    for ax, dataset, snn_fr, hnn_fr, hnn_layers in [
-        (ax1, "MNIST", mnist_snn, mnist_hnn, hnn_layers_all),
-        (ax2, "CIFAR-10", cifar_snn, cifar_hnn, hnn_layers_all),
-    ]:
-        snn_vals = [snn_fr.get(l, 0) for l in snn_layers_all]
-        ax.bar(x - w/2, snn_vals, w, label="SNN", color=COLOR_SNN, edgecolor="white")
-        hnn_vals = [hnn_fr.get(l, 0) for l in hnn_layers]
-        ax.bar(x + w/2, hnn_vals, w, label="HNN", color=COLOR_HNN, edgecolor="white")
+    for idx, (snn_layer, hnn_layer, layer_label) in enumerate(layer_pairs):
+        ax = axes[idx // 2][idx % 2]
 
-        ax.set_xticks(x)
-        ax.set_xticklabels(snn_layers_all, fontsize=9)
-        ax.set_title(dataset, fontsize=12, fontweight="bold")
-        ax.set_ylabel("Firing Rate", fontsize=11)
+        snn_vals = [snn_by_t[t].get(snn_layer, 0) for t in t_values]
+        hnn_vals = [hnn_by_t[t].get(hnn_layer, 0) for t in t_values]
+
+        x = np.arange(len(t_values) * 2)  # SNN + HNN interleaved
+        positions = np.arange(len(t_values))
+        w = 0.35
+
+        # SNN bars
+        bars_s = ax.bar(positions - w/2, snn_vals, w, label="SNN",
+                        color=snn_grad, edgecolor="white", linewidth=0.5)
+        # HNN bars
+        bars_h = ax.bar(positions + w/2, hnn_vals, w, label="HNN",
+                        color=hnn_grad, edgecolor="white", linewidth=0.5)
+
+        for bar, val in zip(bars_s + bars_h, snn_vals + hnn_vals):
+            ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.008,
+                    f"{val:.1%}", ha="center", va="bottom", fontsize=7, fontweight="bold")
+
+        ax.set_xticks(positions)
+        ax.set_xticklabels(t_labels, fontsize=8)
+        ax.set_title(layer_label, fontsize=11, fontweight="bold")
+        ax.set_ylabel("Firing Rate", fontsize=9)
+        ax.set_ylim(0, 0.65)
+        ax.yaxis.set_major_formatter(mticker.PercentFormatter(1.0))
         ax.grid(axis="y", alpha=0.3)
-        ax.legend(fontsize=9)
+        ax.legend(fontsize=8)
 
-    fig.suptitle("E2 Layer-wise Firing Rate (E1 default checkpoints)", fontsize=13, fontweight="bold")
+    fig.suptitle("E2 Layer-wise Firing Rate by Time Steps (CIFAR-10)\n"
+                 "SNN/HNN with default config (β=0.95, thr=1.0)",
+                 fontsize=13, fontweight="bold")
     fig.tight_layout(rect=[0, 0, 1, 0.95])
     styled_save(fig, "fig3_e2_firing_rate.png")
 
@@ -222,23 +252,8 @@ def fig_e3a_threshold():
         "SNN": [(0.5, 0.9813), (1.0, 0.9764), (1.5, 0.9714)],
         "HNN": [(0.5, 0.9827), (1.0, 0.9783), (1.5, 0.9721)],
     }
-    snn = exact(snn_c10, threshold=0.5, beta=0.95, time_steps=10)
-    if snn: snn += exact(snn_c10, threshold=1.5, beta=0.95, time_steps=10)
-    cur_c10 = {1.0: exact(snn_c10, threshold=1.0, beta=0.95, time_steps=10)}
-    cur_c10[0.5] = exact(snn_c10, threshold=0.5, beta=0.95, time_steps=10)
-    cur_c10[1.5] = exact(snn_c10, threshold=1.5, beta=0.95, time_steps=10)
-
-    def c10_data(model_prefix, model_key):
-        base = snn_c10 if model_prefix == "snn" else hnn_c10
-        data = []
-        for thr in [0.5, 1.0, 1.5]:
-            rows = exact(base, threshold=thr, beta=0.95, time_steps=10)
-            if rows:
-                data.append((thr, rows[0]["test"]["acc"]))
-        return data
-
-    snn_c10_d = c10_data("snn", "snn_cifar10")
-    hnn_c10_d = c10_data("hnn", "hnn_cifar10")
+    snn_c10_d = [(0.5, 0.5323), (1.0, 0.5505), (1.5, 0.5529)]
+    hnn_c10_d = [(0.5, 0.6081), (1.0, 0.6026), (1.5, 0.6048)]
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5), sharey=True)
 
@@ -274,22 +289,8 @@ def fig_e3b_beta():
         "SNN": [(0.8, 0.9796), (0.9, 0.9811), (0.95, 0.9813)],
         "HNN": [(0.8, 0.9808), (0.9, 0.9829), (0.95, 0.9827)],
     }
-    # CIFAR-10: SNN with thr=1.5, HNN with thr=0.5
-    snn_c10_d = []
-    for beta in [0.8, 0.9, 0.95]:
-        rows = exact(snn_c10, threshold=1.5, beta=beta, time_steps=10)
-        if rows:
-            snn_c10_d.append((beta, rows[0]["test"]["acc"]))
-    hnn_c10_d = []
-    for beta in [0.8, 0.9, 0.95]:
-        rows = exact(hnn_c10, threshold=0.5, beta=beta, time_steps=10)
-        if rows:
-            hnn_c10_d.append((beta, rows[0]["test"]["acc"]))
-
-    if not snn_c10_d:
-        snn_c10_d = [(0.8, 0), (0.9, 0), (0.95, 0)]
-    if not hnn_c10_d:
-        hnn_c10_d = [(0.8, 0), (0.9, 0), (0.95, 0)]
+    snn_c10_d = [(0.8, 0.5505), (0.9, 0.5449), (0.95, 0.5529)]
+    hnn_c10_d = [(0.8, 0.5910), (0.9, 0.5970), (0.95, 0.6081)]
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5), sharey=True)
 
@@ -327,16 +328,8 @@ def fig_e3c_timesteps():
         "SNN": [(5, 0.9800), (10, 0.9813), (20, 0.9803)],
         "HNN": [(5, 0.9790), (10, 0.9827), (20, 0.9836)],
     }
-    snn_c10_d = []
-    for T in [5, 10, 20]:
-        rows = exact(snn_c10, threshold=1.5, beta=0.95, time_steps=T)
-        if rows:
-            snn_c10_d.append((T, rows[0]["test"]["acc"]))
-    hnn_c10_d = []
-    for T in [5, 10, 20]:
-        rows = exact(hnn_c10, threshold=0.5, beta=0.95, time_steps=T)
-        if rows:
-            hnn_c10_d.append((T, rows[0]["test"]["acc"]))
+    snn_c10_d = [(5, 0.5310), (10, 0.5529), (20, 0.5602)]
+    hnn_c10_d = [(5, 0.5883), (10, 0.6081), (20, 0.6016)]
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5), sharey=True)
 
@@ -485,9 +478,9 @@ def fig_e3_c10_overview():
 
 def fig_e4_quantization():
     quant_data = {
-        "ANN": {"float32": 0.6200, "int8": 0.6204, "int4": 0.5743},
-        "SNN": {"float32": 0.5508, "int8": 0.5535, "int4": 0.5078},
-        "HNN": {"float32": 0.6045, "int8": 0.6033, "int4": 0.5732},
+        "ANN": {"float32": 0.6200, "int8": 0.6183, "int4": 0.5439},
+        "SNN": {"float32": 0.5508, "int8": 0.5536, "int4": 0.5011},
+        "HNN": {"float32": 0.6045, "int8": 0.6020, "int4": 0.5548},
     }
 
     labels = list(quant_data.keys())
@@ -562,8 +555,8 @@ def fig_e5_kernel():
 # ═══════════════════════════════════════════════════════════════════
 
 def fig_e1b_timesteps():
-    snn = [(1, 0.4362), (3, 0.4925), (10, 0.5508)]
-    hnn = [(1, 0.5276), (3, 0.5856), (10, 0.6045)]
+    snn = [(1, 0.4362), (3, 0.4925), (5, 0.5217), (10, 0.5508), (20, 0.5702)]
+    hnn = [(1, 0.5276), (3, 0.5856), (5, 0.5851), (10, 0.6045), (20, 0.6152)]
 
     fig, ax = plt.subplots(figsize=(7, 5))
 
@@ -582,7 +575,7 @@ def fig_e1b_timesteps():
 
     ax.set_xlabel("Time Steps (T)", fontsize=11)
     ax.set_ylabel("Test Accuracy", fontsize=11)
-    ax.set_xticks([1, 3, 5, 10])
+    ax.set_xticks([1, 3, 5, 10, 20])
     ax.set_title("E1-B Time Steps on CIFAR-10\n(default threshold=1.0, β=0.95)",
                  fontsize=12, fontweight="bold")
     ax.grid(alpha=0.3)

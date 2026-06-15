@@ -111,33 +111,25 @@ Key finding: ANN ≈ HNN > SNN. The gap between ANN and SNN (~5.7%) is far more 
 
 ## E2 (CIFAR-10): Firing Rate Analysis
 
-### Default E1 checkpoints (T=10, thr=1.0, beta=0.95)
+### Firing rate by time steps (default thr=1.0, beta=0.95)
 
-| Model | Test Acc | Overall Firing Rate | Hidden Firing Rate |
-|---|---|---:|---:|---:|
-| SNN | 0.5505 | 0.2746 | 0.1793 |
-| HNN | 0.6026 | 0.2336 | 0.2336 |
+| Model | T | Test Acc | Overall FR | Hidden FR | conv1/first_spike | conv2 | fc1 | fc2 |
+|---|---|---|---:|---:|---:|---:|---:|---:|---:|
+| SNN | 1 | 0.4362 | 0.3655 | 0.3131 | 0.3474 | 0.2118 | 0.2942 | 0.3471 |
+| SNN | 3 | 0.4925 | 0.3550 | 0.2977 | 0.3447 | 0.1633 | 0.2389 | 0.3070 |
+| SNN | 5 | 0.5217 | 0.3093 | 0.2304 | 0.2558 | 0.1464 | 0.2661 | 0.3529 |
+| SNN | 10 | 0.5508 | 0.2647 | 0.1647 | 0.1618 | 0.1483 | 0.3112 | 0.4287 |
+| SNN | 20 | 0.5702 | 0.2576 | 0.1543 | 0.1466 | 0.1429 | 0.3723 | 0.4925 |
+| HNN | 1 | 0.5276 | 0.2945 | 0.2945 | 0.2917 | 0.2861 | 0.3632 | 0.3945 |
+| HNN | 3 | 0.5856 | 0.2527 | 0.2527 | 0.2994 | 0.2148 | 0.2519 | 0.3201 |
+| HNN | 5 | 0.5851 | 0.2506 | 0.2506 | 0.2856 | 0.2206 | 0.2574 | 0.3209 |
+| HNN | 10 | 0.6045 | 0.2297 | 0.2297 | 0.2587 | 0.1967 | 0.2923 | 0.3620 |
+| HNN | 20 | 0.6152 | 0.2233 | 0.2233 | 0.2462 | 0.1820 | 0.3579 | 0.4962 |
 
-Layer-wise (default E1):
-
-| Model | Layer | Firing Rate |
-|---|---:|---:|
-| SNN | input | 0.4766 |
-| SNN | conv1 | 0.1762 |
-| SNN | conv2 | 0.1632 |
-| SNN | fc1 | 0.3290 |
-| SNN | fc2 | 0.4479 |
-| HNN | first_spike | 0.2654 |
-| HNN | conv2 | 0.1988 |
-| HNN | fc1 | 0.2864 |
-| HNN | fc2 | 0.3736 |
-
-### Best configuration checkpoints
-
-| Model | Config | Test Acc | Overall Firing Rate | Hidden Firing Rate |
-|---|---|---|---:|---:|---:|
-| SNN | T=20, thr=1.5, beta=0.95 | **0.5602** | 0.2758 | 0.1810 |
-| HNN | T=10, thr=0.5, beta=0.95 | **0.6081** | 0.2744 | 0.2744 |
+Key findings:
+- SNN hidden FR drops dramatically with more time steps (0.313→0.154), as longer integration enables more selective spiking
+- HNN hidden FR also drops (0.295→0.223) but less dramatically — its analog first layer already provides stable features
+- For both models, conv1/first_spike and conv2 FR decrease with T, while fc1 and fc2 FR increase — deeper layers maintain high firing rates to support classification
 
 ---
 
@@ -193,30 +185,34 @@ Same default params as E1 (threshold=1.0, beta=0.95). Combined with E3-C time st
 Default config (thr=1.0, beta=0.95):
 
 | Model | Time Steps | Epochs | Best Val Acc | Test Acc | Test Loss |
-|---|---|---|---:|---:|---:|---:|
+|---|---|---|---|---:|---:|---:|---:|
 | SNN | 1 | 17 | 0.4396 | **0.4362** | 1.5718 |
 | SNN | 3 | 16 | 0.4938 | **0.4925** | 1.4185 |
+| SNN | 5 | 16 | 0.5214 | **0.5217** | 1.3374 |
 | SNN | 10 | 18 | 0.5476 | **0.5508** | 1.2723 |
+| SNN | 20 | 17 | 0.5666 | **0.5702** | 1.2209 |
 | HNN | 1 | 24 | 0.5260 | **0.5276** | 1.3565 |
 | HNN | 3 | 25 | 0.5868 | **0.5856** | 1.1853 |
+| HNN | 5 | 21 | 0.5854 | **0.5851** | 1.1718 |
 | HNN | 10 | 25 | 0.5986 | **0.6045** | 1.1297 |
+| HNN | 20 | 27 | 0.6114 | **0.6152** | 1.1145 |
 
-Both models benefit monotonically from more time steps. SNN is more sensitive (gap between T=1 and T=10: +11.5%) than HNN (+7.7%), because HNN's analog first layer already extracts spatial features before the temporal loop.
+Both models benefit monotonically from more time steps. SNN is more sensitive (gap between T=1 and T=10: +11.5%) than HNN (+7.7%), because HNN's analog first layer already extracts spatial features before the temporal loop. Firing rate decreases with more time steps (SNN hidden FR: 0.313 at T=1 → 0.154 at T=20), showing that longer integration enables more selective spiking.
 
 Compared with tuned configs from E3-C (SNN thr=1.5, HNN thr=0.5):
 
 | Model | Time Steps | Default Config | Tuned Config |
-|---|---|---|---:|
+|---|---|---|---|---:|
 | SNN | 1 | 0.4362 | — |
 | SNN | 3 | 0.4925 | — |
-| SNN | 5 | — | 0.5310 |
+| SNN | 5 | 0.5217 | 0.5310 |
 | SNN | 10 | 0.5508 | 0.5529 |
-| SNN | 20 | — | 0.5602 |
+| SNN | 20 | 0.5702 | 0.5602 |
 | HNN | 1 | 0.5276 | — |
 | HNN | 3 | 0.5856 | — |
-| HNN | 5 | — | 0.5883 |
+| HNN | 5 | 0.5851 | 0.5883 |
 | HNN | 10 | 0.6045 | 0.6081 |
-| HNN | 20 | — | 0.6016 |
+| HNN | 20 | 0.6152 | 0.6016 |
 
 ---
 

@@ -17,16 +17,13 @@ from src.train import ROOT, default_device, run_epoch
 
 
 def quantize_weight_per_tensor(w: torch.Tensor, bits: int) -> torch.Tensor:
-    w_min = w.min()
-    w_max = w.max()
-    if w_max == w_min:
+    if w.numel() == 0:
         return w
-    qmax = 2**bits - 1
-    scale = (w_max - w_min) / qmax
-    zero_point = (-w_min / scale).round().clamp(0, qmax)
-    w_q = (w / scale).round() + zero_point
-    w_q = w_q.clamp(0, qmax)
-    return (w_q - zero_point) * scale
+    qmax = 2**(bits - 1) - 1
+    qmin = -2**(bits - 1)
+    scale = w.abs().max() / qmax if w.abs().max() > 0 else 1.0
+    w_q = (w / scale).round().clamp(qmin, qmax)
+    return w_q * scale
 
 
 def quantize_model(model: nn.Module, bits: int):

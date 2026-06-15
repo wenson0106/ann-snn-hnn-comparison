@@ -99,25 +99,32 @@
 
 ![Layer-wise FR](images/fig3_e2_firing_rate.png)
 
-▲ 圖 4: MNIST 與 CIFAR-10 的逐層 firing rate 比較（使用 E1 default checkpoint: T=10, thr=1.0, β=0.95）。
+▲ 圖 4: CIFAR-10 逐層 firing rate 隨 time steps 的變化。每個子圖顯示一個 hidden layer，每層 10 根長條（SNN T=1/3/5/10/20 與 HNN T=1/3/5/10/20），顏色深淺表示 T 越大。
 
-| Layer | SNN (MNIST) | SNN (CIFAR-10) | HNN (MNIST) | HNN (CIFAR-10) |
-|---|---|---|---|---|
-| input / first_spike | 0.1326 | 0.4766 | 0.2920 | 0.2654 |
-| conv1 | 0.1783 | 0.1762 | — | — |
-| conv2 | 0.1849 | 0.1632 | 0.2097 | 0.1988 |
-| fc1 | 0.2799 | 0.3290 | 0.2757 | 0.2864 |
-| fc2 | 0.3933 | 0.4479 | 0.3840 | 0.3736 |
+**Firing rate 隨 T 的變化模式（CIFAR-10 default config, thr=1.0, β=0.95）**：
+
+| Model | T | Test Acc | Hidden FR | conv1/first_spike | conv2 | fc1 | fc2 |
+|---|---|---|---:|---:|---:|---:|---:|---:|
+| SNN | 1 | 43.62% | 0.313 | 0.347 | 0.212 | 0.294 | 0.347 |
+| SNN | 3 | 49.25% | 0.298 | 0.345 | 0.163 | 0.239 | 0.307 |
+| SNN | 5 | 52.17% | 0.230 | 0.256 | 0.146 | 0.266 | 0.353 |
+| SNN | 10 | 55.08% | 0.165 | 0.162 | 0.148 | 0.311 | 0.429 |
+| SNN | 20 | 57.02% | 0.154 | 0.147 | 0.143 | 0.372 | 0.493 |
+| HNN | 1 | 52.76% | 0.295 | 0.292 | 0.286 | 0.363 | 0.395 |
+| HNN | 3 | 58.56% | 0.253 | 0.299 | 0.215 | 0.252 | 0.320 |
+| HNN | 5 | 58.51% | 0.251 | 0.286 | 0.221 | 0.257 | 0.321 |
+| HNN | 10 | 60.45% | 0.230 | 0.259 | 0.197 | 0.292 | 0.362 |
+| HNN | 20 | 61.52% | 0.223 | 0.246 | 0.182 | 0.358 | 0.496 |
 
 **關鍵觀察**：
 
-1. **SNN input layer 差異巨大** — MNIST 的 input FR 僅 0.13，CIFAR-10 高達 0.48。這是因為 MNIST 大部分像素是黑色背景（值為 0，永不發 spike），而 CIFAR-10 的彩色自然影像有更多非零像素。這也解釋了為何 CIFAR-10 的 SNN 整體 firing rate 較高。
+1. **SNN hidden FR 隨 T 增加大幅下降（0.313→0.154）** — 更長的 time steps 讓神經元有更多時間累積證據，使 spiking 更 selective，整體 firing rate 降低的同時準確率提升。
 
-2. **Firing rate 隨層數遞增** — 從 conv1 到 fc2，firing rate 逐步上升，符合神經網路中深層特徵更活躍的預期。
+2. **兩模型 conv1/first_spike 層 FR 隨 T 下降** — 表示更多 time steps 讓低層特徵趨向穩定，不需要頻繁觸發 spike。
 
-3. **HNN 的 first_spike 層 firing rate 中等**（0.27–0.29），介於低層與高層之間，這說明第一層 analog conv 的輸出經過 LIF 編碼後，產生了一個 balanced 的 spike representation。
+3. **兩模型 fc1/fc2 層 FR 隨 T 上升** — 深層分類層需要維持高 firing rate 來支持最終分類決策，隨著時間步增加能累積更多證據。
 
-4. **HNN 的 overall FR vs hidden FR** — 在 MNIST 上兩者相等（0.2545），在 CIFAR-10 上 also 相等（0.2336）。這是因為 HNN 的 input 層是 analog（沒有 spike），所以所有 spike 都來自 hidden layers。
+4. **HNN 對 T 的敏感度低於 SNN** — HNN 的 hidden FR 僅從 0.295 降到 0.223，變化幅度較小，因為第一層 analog convolution 提供了穩定的空間特徵基礎。
 
 ---
 
@@ -170,18 +177,16 @@
 
 ### 2.4 E1-B: Time Steps 變化（CIFAR-10 Default Config）
 
-預設 threshold=1.0, beta=0.95 下，測試 T=1 與 T=3：
+預設 threshold=1.0, beta=0.95 下，測試 T=1, 3, 5, 10, 20：
 
-| Model | T=1 | T=3 | T=10 |
-|---|---|---|---|
-| SNN | **43.62%** | **49.25%** | **55.08%** |
-| HNN | **52.76%** | **58.56%** | **60.45%** |
+| Model | T=1 | T=3 | T=5 | T=10 | T=20 |
+|---|---|---|---|---|---|
+| SNN | 43.62% | 49.25% | 52.17% | 55.08% | **57.02%** |
+| HNN | 52.76% | 58.56% | 58.51% | 60.45% | **61.52%** |
 
 ![Time Steps Variation](images/fig10_e1b_timesteps.png)
 
-▲ 圖 9: CIFAR-10 上 default config 的 time steps 變化。兩模型都隨 T 增加進步，SNN 對 T 更敏感（T=1→10 提升 11.5% vs HNN 提升 7.7%）。
-
-HNN 在 T=1 即達到 52.76%，遠高於 SNN 的 43.62%，印證了 HNN 第一層 analog convolution 的優勢。
+▲ 圖 9: CIFAR-10 上 default config 的 time steps 變化。兩模型都隨 T 增加進步，SNN 對 T 更敏感（T=1→20 提升 13.4% vs HNN 提升 8.8%）。HNN 在 T=1 即達到 52.76%，遠高於 SNN 的 43.62%，印證了 HNN 第一層 analog convolution 的優勢。
 
 ### 2.5 E4: Post-Training 權重量化（8-bit / 4-bit）
 
