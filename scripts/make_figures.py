@@ -505,19 +505,19 @@ def fig_e3_c10_overview():
     ax.legend(fontsize=8)
     ax.set_xlim(0.77, 0.98)
 
-    # Time Steps
+    # Time Steps (default config: thr=1.0, β=0.95)
     ax = axes[2]
-    snn = [(5, 0.5310), (10, 0.5529), (20, 0.5602)]
-    hnn = [(5, 0.5883), (10, 0.6081), (20, 0.6016)]
+    snn = [(1, 0.4362), (3, 0.4925), (5, 0.5217), (10, 0.5508), (20, 0.5702)]
+    hnn = [(1, 0.5276), (3, 0.5856), (5, 0.5851), (10, 0.6045), (20, 0.6152)]
     x = [p[0] for p in snn]
-    ax.plot(x, [p[1] for p in snn], "o-", color=COLOR_SNN, lw=2.5, ms=7, label="SNN (thr=1.5)")
-    ax.plot(x, [p[1] for p in hnn], "s--", color=COLOR_HNN, lw=2.5, ms=7, label="HNN (thr=0.5)")
+    ax.plot(x, [p[1] for p in snn], "o-", color=COLOR_SNN, lw=2.5, ms=7, label="SNN (default)")
+    ax.plot(x, [p[1] for p in hnn], "s--", color=COLOR_HNN, lw=2.5, ms=7, label="HNN (default)")
     for p in snn + hnn:
         ax.annotate(f"{p[1]:.2%}", (p[0], p[1]), textcoords="offset points",
                     xytext=(0, 10), ha="center", fontsize=7.5, fontweight="bold")
     ax.set_xlabel("Time Steps", fontsize=10)
-    ax.set_title("Time Steps Sweep\n(best thr, β=0.95)", fontsize=10, fontweight="bold")
-    ax.set_xticks([5, 10, 15, 20])
+    ax.set_title("Time Steps\n(default thr=1.0, β=0.95)", fontsize=10, fontweight="bold")
+    ax.set_xticks([1, 3, 5, 10, 20])
     ax.grid(alpha=0.3)
     ax.legend(fontsize=8)
 
