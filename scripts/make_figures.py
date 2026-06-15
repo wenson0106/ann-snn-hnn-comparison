@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
-import matplotlib
-matplotlib.use("Agg")
+import matplotlib as mpl
+mpl.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 import numpy as np
@@ -91,13 +91,27 @@ def styled_save(fig, name):
 # Figure 1: E1 Accuracy — MNIST vs CIFAR-10  (grouped bar)
 # ═══════════════════════════════════════════════════════════════════
 
+def get_best_acc(runs, picker=None):
+    if picker:
+        r = picker(runs)
+    else:
+        r = pick_best(runs)
+    return r["test"]["acc"] if r else None
+
+def get_exact_acc(runs, **filters):
+    out = exact(runs, **filters)
+    return out[0]["test"]["acc"] if out else None
+
 def fig_e1_overview():
-    a_mnist = pick_best(ann_mnist)["test"]["acc"]
-    s_mnist = pick_best(snn_mnist)["test"]["acc"]
-    h_mnist = pick_best(hnn_mnist)["test"]["acc"]
-    a_c10   = pick_best_default(ann_c10)["test"]["acc"]
-    s_c10   = exact(snn_c10, time_steps=10, threshold=1.0, beta=0.95)[0]["test"]["acc"]
-    h_c10   = exact(hnn_c10, time_steps=10, threshold=1.0, beta=0.95)[0]["test"]["acc"]
+    a_mnist = get_best_acc(ann_mnist)
+    s_mnist = get_best_acc(snn_mnist)
+    h_mnist = get_best_acc(hnn_mnist)
+    a_c10   = get_best_acc(ann_c10, picker=pick_best_default)
+    s_c10   = get_exact_acc(snn_c10, time_steps=10, threshold=1.0, beta=0.95)
+    h_c10   = get_exact_acc(hnn_c10, time_steps=10, threshold=1.0, beta=0.95)
+    if any(v is None for v in [a_mnist, s_mnist, h_mnist, a_c10, s_c10, h_c10]):
+        print("  WARNING: Missing runs for fig1, skipping")
+        return
 
     labels = ["ANN", "SNN", "HNN"]
     mnist_vals = [a_mnist, s_mnist, h_mnist]
@@ -134,8 +148,12 @@ def fig_e1_overview():
 
 def fig_e1_cifar10():
     a = pick_best_default(ann_c10)
-    s = exact(snn_c10, time_steps=10, threshold=1.0, beta=0.95)[0]
-    h = exact(hnn_c10, time_steps=10, threshold=1.0, beta=0.95)[0]
+    s = exact(snn_c10, time_steps=10, threshold=1.0, beta=0.95)
+    h = exact(hnn_c10, time_steps=10, threshold=1.0, beta=0.95)
+    if not a or not s or not h:
+        print("  WARNING: Missing runs for fig2, skipping")
+        return
+    s, h = s[0], h[0]
     models = [
         ("ANN", a["test"]["acc"], a["best"]["epoch"], COLOR_ANN),
         ("SNN", s["test"]["acc"], s["best"]["epoch"], COLOR_SNN),
@@ -202,8 +220,8 @@ def fig_e2_firing_rate():
     ]
 
     fig, axes = plt.subplots(2, 2, figsize=(14, 10), sharey=False)
-    snn_grad = [__import__("matplotlib").colors.to_rgba(COLOR_SNN, a) for a in [0.4, 0.55, 0.7, 0.85, 1.0]]
-    hnn_grad = [__import__("matplotlib").colors.to_rgba(COLOR_HNN, a) for a in [0.4, 0.55, 0.7, 0.85, 1.0]]
+    snn_grad = [mpl.colors.to_rgba(COLOR_SNN, a) for a in [0.4, 0.55, 0.7, 0.85, 1.0]]
+    hnn_grad = [mpl.colors.to_rgba(COLOR_HNN, a) for a in [0.4, 0.55, 0.7, 0.85, 1.0]]
     t_labels = [f"T={t}" for t in t_values]
 
     for idx, (snn_layer, hnn_layer, layer_label) in enumerate(layer_pairs):
@@ -212,7 +230,6 @@ def fig_e2_firing_rate():
         snn_vals = [snn_by_t[t].get(snn_layer, 0) for t in t_values]
         hnn_vals = [hnn_by_t[t].get(hnn_layer, 0) for t in t_values]
 
-        x = np.arange(len(t_values) * 2)  # SNN + HNN interleaved
         positions = np.arange(len(t_values))
         w = 0.35
 
@@ -363,11 +380,17 @@ def fig_e3c_timesteps():
 
 def fig_e2_overall_fr():
     def load_fr(path):
-        with open(path) as f:
-            return json.load(f)
+        try:
+            with open(path) as f:
+                return json.load(f)
+        except:
+            return None
 
     mnist = load_fr("experiments/e2_firing_rate_mnist/firing_rate_results.json")
     cifar = load_fr("experiments/e2_firing_rate_cifar10/firing_rate_results.json")
+    if mnist is None or cifar is None:
+        print("  WARNING: Firing rate data not found, skipping fig7")
+        return
 
     def get(ds, exp):
         for r in ds:
@@ -375,15 +398,19 @@ def fig_e2_overall_fr():
                 return r
         return None
 
+    def get_fr(ds, exp, key):
+        r = get(ds, exp)
+        return r[key] if r else 0.0
+
     labels = ["SNN", "HNN"]
-    mnist_overall = [get(mnist, "snn_mnist_spike")["overall_firing_rate"],
-                     get(mnist, "hnn_mnist")["overall_firing_rate"]]
-    mnist_hidden  = [get(mnist, "snn_mnist_spike")["hidden_firing_rate"],
-                     get(mnist, "hnn_mnist")["hidden_firing_rate"]]
-    cifar_overall = [get(cifar, "snn_cifar10")["overall_firing_rate"],
-                     get(cifar, "hnn_cifar10")["overall_firing_rate"]]
-    cifar_hidden  = [get(cifar, "snn_cifar10")["hidden_firing_rate"],
-                     get(cifar, "hnn_cifar10")["hidden_firing_rate"]]
+    mnist_overall = [get_fr(mnist, "snn_mnist_spike", "overall_firing_rate"),
+                     get_fr(mnist, "hnn_mnist", "overall_firing_rate")]
+    mnist_hidden  = [get_fr(mnist, "snn_mnist_spike", "hidden_firing_rate"),
+                     get_fr(mnist, "hnn_mnist", "hidden_firing_rate")]
+    cifar_overall = [get_fr(cifar, "snn_cifar10", "overall_firing_rate"),
+                     get_fr(cifar, "hnn_cifar10", "overall_firing_rate")]
+    cifar_hidden  = [get_fr(cifar, "snn_cifar10", "hidden_firing_rate"),
+                     get_fr(cifar, "hnn_cifar10", "hidden_firing_rate")]
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5), sharey=True)
     w = 0.3
@@ -488,7 +515,6 @@ def fig_e4_quantization():
     w = 0.25
     bits = ["float32", "int8", "int4"]
     colors = ["#4C72B0", "#DD8452", "#55A868"]
-    hatch_patterns = ["", "//", "xx"]
 
     fig, ax = plt.subplots(figsize=(8, 5.5))
     for i, bit in enumerate(bits):

@@ -28,7 +28,7 @@ Observation: MNIST is too easy — all three models cluster in 97-98%.
 Common setup: E1 checkpoints, T=10, beta=0.95, threshold=1.0
 
 | Model | Test Acc | Overall Firing Rate | Hidden Firing Rate |
-|---|---|---:|---:|---:|
+|---|---:|---:|---:|
 | SNN | 0.9764 | 0.1785 | 0.1862 |
 | HNN | 0.9783 | 0.2545 | 0.2545 |
 
@@ -101,9 +101,9 @@ Default params: threshold=1.0, beta=0.95, T=10 (SNN/HNN), batch=128 (ANN/HNN), b
 
 | Model | Run | Epochs | Best Val Acc | Test Acc | Test Loss |
 |---|---|---|---:|---:|---:|---:|
-| ANN | `runs/ann_cifar10/20260526-144318` | 18 | 0.6112 | **0.6077** | 1.1593 |
-| SNN | `runs/snn_cifar10/20260526-145103` | 18 | 0.5574 | 0.5505 | 1.2704 |
-| HNN | `runs/hnn_cifar10/20260526-151814` | 24 | 0.5998 | **0.6026** | 1.1241 |
+| ANN | `runs/ann_cifar10/20260614-225310` | 16 | 0.6262 | **0.6200** | 1.1053 |
+| SNN | `runs/snn_cifar10/20260614-225311` | 18 | 0.5574 | **0.5508** | 1.2723 |
+| HNN | `runs/hnn_cifar10/20260614-225312` | 25 | 0.5986 | **0.6045** | 1.1297 |
 
 Key finding: ANN ≈ HNN > SNN. The gap between ANN and SNN (~5.7%) is far more pronounced than on MNIST, confirming that MNIST was too simple to differentiate these model families.
 
@@ -159,7 +159,7 @@ Notable: SNN benefits from higher threshold (opposite to MNIST, where lower was 
 | HNN | 0.9 | 0.5970 |
 | HNN | **0.95** | **0.6081** |
 
-Higher beta is better for both models — consistent with MNIST.
+Higher beta is generally better — though SNN shows slight non-monotonicity at β=0.9 (0.5449 vs 0.5505 at β=0.8), the overall trend favors higher β.
 
 ### E3-C (CIFAR-10): Time Steps Sweep (SNN: thr=1.5, HNN: thr=0.5, beta=0.95)
 
