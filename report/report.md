@@ -133,7 +133,7 @@ HNN 的 overall FR 等於 hidden FR（SNN 則因 input 層貢獻大量 spike 而
 ▲ 圖 5: CIFAR-10 逐層 firing rate 隨 time steps 的變化。x 軸為四個 hidden layer，每層 10 根 bar（左 5 SNN + 右 5 HNN，T=1→20 由淺至深）。
 
 | Model | T | Test Acc | Hidden FR | conv1/first_spike | conv2 | fc1 | fc2 |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|
+|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | SNN | 1 | 43.62% | 0.313 | 0.347 | 0.212 | 0.294 | 0.347 |
 | SNN | 3 | 49.25% | 0.298 | 0.345 | 0.163 | 0.239 | 0.307 |
 | SNN | 5 | 52.17% | 0.230 | 0.256 | 0.146 | 0.266 | 0.353 |
