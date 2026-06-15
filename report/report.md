@@ -66,7 +66,7 @@ SNN 的 rate coding 將每個像素值 p ∈ [0,1] 轉換為 T 個 Bernoulli tri
 #### CIFAR-10 結果
 
 | Model | Best Epoch | Test Accuracy |
-|---|---|---|:---:|
+|---|---|---|
 | ANN | 16 | **62.00%** |
 | SNN | 18 | **55.08%** |
 | HNN | 25 | **60.45%** |
@@ -130,7 +130,7 @@ HNN 的 overall FR 等於 hidden FR（SNN 則因 input 層貢獻大量 spike 而
 
 ![Layer-wise FR](images/fig3_e2_firing_rate.png)
 
-▲ 圖 5: CIFAR-10 逐層 firing rate 隨 time steps 的變化。每個子圖顯示一個 hidden layer，含 SNN T=1/3/5/10/20 與 HNN T=1/3/5/10/20，顏色深淺表示 T 越大。
+▲ 圖 5: CIFAR-10 逐層 firing rate 隨 time steps 的變化。x 軸為四個 hidden layer，每層 10 根 bar（左 5 SNN + 右 5 HNN，T=1→20 由淺至深）。
 
 | Model | T | Test Acc | Hidden FR | conv1/first_spike | conv2 | fc1 | fc2 |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|

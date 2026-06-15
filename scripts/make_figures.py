@@ -211,52 +211,79 @@ def fig_e2_firing_rate():
 
     t_values = sorted(set(list(snn_by_t.keys()) + list(hnn_by_t.keys())))
 
-    # Layer mapping: pair SNN and HNN equivalent layers
-    layer_pairs = [
-        ("conv1", "first_spike", "Layer 1\n(Conv→Spike)"),
-        ("conv2", "conv2",       "Layer 2\n(Conv2)"),
-        ("fc1",   "fc1",         "Layer 3\n(FC1)"),
-        ("fc2",   "fc2",         "Layer 4\n(FC2)"),
+    # Layer mapping: SNN layer name -> HNN layer name -> display label
+    layers = [
+        ("conv1", "first_spike", "Conv→Spike"),
+        ("conv2", "conv2",       "Conv2"),
+        ("fc1",   "fc1",         "FC1"),
+        ("fc2",   "fc2",         "FC2"),
     ]
 
-    fig, axes = plt.subplots(2, 2, figsize=(14, 10), sharey=False)
     snn_grad = [mpl.colors.to_rgba(COLOR_SNN, a) for a in [0.4, 0.55, 0.7, 0.85, 1.0]]
     hnn_grad = [mpl.colors.to_rgba(COLOR_HNN, a) for a in [0.4, 0.55, 0.7, 0.85, 1.0]]
     t_labels = [f"T={t}" for t in t_values]
 
-    for idx, (snn_layer, hnn_layer, layer_label) in enumerate(layer_pairs):
-        ax = axes[idx // 2][idx % 2]
+    fig, ax = plt.subplots(figsize=(16, 6.5))
 
+    n_ts = len(t_values)
+    BW = 0.055            # bar width
+    G_SNN = 0.005         # gap between SNN bars
+    G_MODEL = 0.04        # gap between SNN and HNN groups
+    G_LAYER = 0.18        # gap between layers
+
+    # Build bar positions
+    bars_data = []  # (x, val, color, is_hnn)
+    layer_centers = []
+    cur = 0
+    for li, (snn_layer, hnn_layer, _) in enumerate(layers):
         snn_vals = [snn_by_t[t].get(snn_layer, 0) for t in t_values]
         hnn_vals = [hnn_by_t[t].get(hnn_layer, 0) for t in t_values]
-
-        positions = np.arange(len(t_values))
-        w = 0.35
+        start = cur
 
         # SNN bars
-        bars_s = ax.bar(positions - w/2, snn_vals, w, label="SNN",
-                        color=snn_grad, edgecolor="white", linewidth=0.5)
+        for ti, (val, c) in enumerate(zip(snn_vals, snn_grad)):
+            bars_data.append((cur, val, c, False))
+            cur += BW + G_SNN
+
+        cur += G_MODEL
+
         # HNN bars
-        bars_h = ax.bar(positions + w/2, hnn_vals, w, label="HNN",
-                        color=hnn_grad, edgecolor="white", linewidth=0.5)
+        for ti, (val, c) in enumerate(zip(hnn_vals, hnn_grad)):
+            bars_data.append((cur, val, c, True))
+            cur += BW + G_SNN
 
-        for bar, val in zip(bars_s + bars_h, snn_vals + hnn_vals):
-            ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.008,
-                    f"{val:.1%}", ha="center", va="bottom", fontsize=7, fontweight="bold")
+        layer_centers.append((start + cur - G_LAYER) / 2 - G_SNN)
+        cur += G_LAYER
 
-        ax.set_xticks(positions)
-        ax.set_xticklabels(t_labels, fontsize=8)
-        ax.set_title(layer_label, fontsize=11, fontweight="bold")
-        ax.set_ylabel("Firing Rate", fontsize=9)
-        ax.set_ylim(0, 0.65)
-        ax.yaxis.set_major_formatter(mticker.PercentFormatter(1.0))
-        ax.grid(axis="y", alpha=0.3)
-        ax.legend(fontsize=8)
+    for x, val, color, _ in bars_data:
+        ax.bar(x, val, BW, color=color, edgecolor="white", linewidth=0.4)
+        if val > 0.02:
+            ax.text(x + BW/2, val + 0.006, f"{val:.0%}",
+                    ha="center", va="bottom", fontsize=5, fontweight="bold")
 
-    fig.suptitle("E2 Layer-wise Firing Rate by Time Steps (CIFAR-10)\n"
+    ax.set_xticks(layer_centers)
+    ax.set_xticklabels([lbl for _, _, lbl in layers], fontsize=10, fontweight="bold")
+    ax.set_ylabel("Firing Rate", fontsize=11)
+    ax.set_ylim(0, 0.62)
+    ax.yaxis.set_major_formatter(mticker.PercentFormatter(1.0))
+    ax.grid(axis="y", alpha=0.3)
+
+    from matplotlib.patches import Patch
+    leg_snn = [Patch(facecolor=c, edgecolor="white") for c in snn_grad]
+    leg_hnn = [Patch(facecolor=c, edgecolor="white") for c in hnn_grad]
+    leg1 = ax.legend(leg_snn, t_labels, loc="upper left", fontsize=7,
+                     title="SNN", title_fontsize=8, ncol=1,
+                     bbox_to_anchor=(1.01, 0.98), framealpha=0.9)
+    leg2 = ax.legend(leg_hnn, t_labels, loc="upper left", fontsize=7,
+                     title="HNN", title_fontsize=8, ncol=1,
+                     bbox_to_anchor=(1.01, 0.55), framealpha=0.9)
+    ax.add_artist(leg1)
+
+    ax.set_title("Layer-wise Firing Rate by Time Steps (CIFAR-10)\n"
                  "SNN/HNN with default config (β=0.95, thr=1.0)",
                  fontsize=13, fontweight="bold")
-    fig.tight_layout(rect=[0, 0, 1, 0.95])
+
+    fig.tight_layout(rect=[0, 0, 0.88, 0.93])
     styled_save(fig, "fig3_e2_firing_rate.png")
 
 
