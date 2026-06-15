@@ -529,14 +529,14 @@ def fig_e4_quantization():
     x = np.arange(len(labels))
     w = 0.25
     bits = ["float32", "int8", "int4"]
-    colors = ["#4C72B0", "#DD8452", "#55A868"]
+    # sequential dark→light to show degradation as bit width decreases
+    bit_colors = ["#2166AC", "#67A9CF", "#D1E5F0"]
 
     fig, ax = plt.subplots(figsize=(8, 5.5))
     for i, bit in enumerate(bits):
         vals = [quant_data[m][bit] for m in labels]
         bars = ax.bar(x + (i - 1) * w, vals, w, label=bit,
-                      color=colors, edgecolor="white", linewidth=0.5,
-                      alpha=1.0 if i == 0 else 0.75)
+                      color=bit_colors[i], edgecolor="white", linewidth=0.5)
         for bar, val in zip(bars, vals):
             ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.008,
                     f"{val:.2%}", ha="center", va="bottom", fontsize=9, fontweight="bold")
