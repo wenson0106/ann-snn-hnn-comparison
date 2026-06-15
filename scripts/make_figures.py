@@ -106,38 +106,26 @@ def fig_e1_overview():
     a_mnist = get_best_acc(ann_mnist)
     s_mnist = get_best_acc(snn_mnist)
     h_mnist = get_best_acc(hnn_mnist)
-    a_c10   = get_best_acc(ann_c10, picker=pick_best_default)
-    s_c10   = get_exact_acc(snn_c10, time_steps=10, threshold=1.0, beta=0.95)
-    h_c10   = get_exact_acc(hnn_c10, time_steps=10, threshold=1.0, beta=0.95)
-    if any(v is None for v in [a_mnist, s_mnist, h_mnist, a_c10, s_c10, h_c10]):
+    if any(v is None for v in [a_mnist, s_mnist, h_mnist]):
         print("  WARNING: Missing runs for fig1, skipping")
         return
 
     labels = ["ANN", "SNN", "HNN"]
-    mnist_vals = [a_mnist, s_mnist, h_mnist]
-    c10_vals   = [a_c10,   s_c10,   h_c10]
+    vals = [a_mnist, s_mnist, h_mnist]
+    colors = [COLOR_ANN, COLOR_SNN, COLOR_HNN]
 
-    x = np.arange(len(labels))
-    w = 0.35
+    fig, ax = plt.subplots(figsize=(5, 5))
+    bars = ax.bar(labels, vals, color=colors, edgecolor="white", linewidth=0.5, width=0.5)
 
-    fig, ax = plt.subplots(figsize=(7, 5))
-    b1 = ax.bar(x - w/2, mnist_vals, w, label="MNIST",
-                color=[COLOR_MNIST]*3, edgecolor="white", linewidth=0.5)
-    b2 = ax.bar(x + w/2, c10_vals,   w, label="CIFAR-10",
-                color=[COLOR_ANN, COLOR_SNN, COLOR_HNN], edgecolor="white", linewidth=0.5)
-
-    for bar, val in zip(b1 + b2, mnist_vals + c10_vals):
+    for bar, val in zip(bars, vals):
         ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.008,
-                f"{val:.1%}", ha="center", va="bottom", fontsize=9, fontweight="bold")
+                f"{val:.1%}", ha="center", va="bottom", fontsize=10, fontweight="bold")
 
-    ax.set_xticks(x)
-    ax.set_xticklabels(labels, fontsize=12)
     ax.set_ylabel("Test Accuracy", fontsize=11)
-    ax.set_ylim(0, 1.08)
+    ax.set_ylim(0, 1.05)
     ax.yaxis.set_major_formatter(mticker.PercentFormatter(1.0))
-    ax.legend(fontsize=10, loc="lower right")
     ax.grid(axis="y", alpha=0.3)
-    ax.set_title("E1 Accuracy Comparison: MNIST vs CIFAR-10", fontsize=13, fontweight="bold")
+    ax.set_title("E1 MNIST Accuracy Comparison", fontsize=13, fontweight="bold")
 
     styled_save(fig, "fig1_e1_overview.png")
 

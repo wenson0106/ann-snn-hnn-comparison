@@ -73,7 +73,7 @@ SNN 的 rate coding 將每個像素值 p ∈ [0,1] 轉換為 T 個 Bernoulli tri
 
 ![E1 Accuracy Comparison](images/fig1_e1_overview.png)
 
-▲ 圖 1: MNIST 與 CIFAR-10 上的準確率比較。
+▲ 圖 1: MNIST 上的準確率比較。
 
 ![E1 CIFAR-10 Detail](images/fig2_e1_cifar10.png)
 
